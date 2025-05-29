@@ -37,6 +37,7 @@ update:2025/05/27
 *   **模块化与可配置性**: 清晰的代码结构 (数据、模型、训练器、评估器等) 和中心化的配置 (`src/config.py`)，易于理解、修改和扩展。
 *   **标准数据处理流程**: 包含时间序列数据加载、预处理 (特征选择、缺失值、标准化)、划分 (训练/验证/测试) 和 `DataLoader` 构建。
 *   **Alpha 调度策略**: 支持多种 Alpha 动态调整策略 (如 `linear`, `exponential`) 或固定值 (`constant`)。
+*   **Alpha 门控机制**: 可选的 `GatedAlphaScheduler` 在验证损失长期无改善时自动终止学生模型训练。
 *   **多维度评估**:
     *   计算常用预测指标 (MSE, MAE)。
     *   支持通过向测试数据添加噪声来评估模型的鲁棒性。
@@ -149,7 +150,7 @@ python main.py
 *   **数据处理配置**: 批次大小 (`BATCH_SIZE`) 等。
 *   **模型配置**: 选择教师和学生模型的类型及其详细超参数。
 *   **训练配置**: 训练设备 (`DEVICE`), 最大轮数 (`EPOCHS`), 优化器类型和参数 (`LEARNING_RATE`, `WEIGHT_DECAY`), Early Stopping 设置 (`PATIENCE`), 任务损失函数 (`LOSS_FN`)。
-*   **RDT 配置**: Alpha 调度策略 (`ALPHA_SCHEDULE`), 起始/结束 Alpha 值 (`ALPHA_START`, `ALPHA_END`), 固定 Alpha 值 (`CONSTANT_ALPHA`)。
+*   **RDT 配置**: Alpha 调度策略 (`ALPHA_SCHEDULE`), 起始/结束 Alpha 值 (`ALPHA_START`, `ALPHA_END`), 固定 Alpha 值 (`CONSTANT_ALPHA`), 以及可选的 Alpha 门控参数 (`USE_ALPHA_GATING`, `GATING_THRESHOLD`, `GATING_PATIENCE`)。
 *   **评估配置**: 需要计算的指标列表 (`METRICS`), 鲁棒性测试的噪声水平列表 (`ROBUSTNESS_NOISE_LEVELS`)。
 *   **实验管理**: 随机种子 (`SEED`) 保证可复现性, 实验名称 (`EXPERIMENT_NAME`), 稳定性运行次数 (`STABILITY_RUNS`)。
 

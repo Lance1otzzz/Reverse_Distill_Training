@@ -81,11 +81,38 @@ class ExponentialScheduler(BaseAlphaScheduler):
         pass
 
 
+class GatedAlphaScheduler(BaseAlphaScheduler):
+    """Wrap another scheduler and trigger training abort if validation loss doesn't improve."""
+
+    def __init__(self, base_scheduler, threshold=0.01, patience=2):
+        super().__init__(base_scheduler.alpha_start, base_scheduler.alpha_end, base_scheduler.total_epochs)
+        self.base_scheduler = base_scheduler
+        self.threshold = threshold
+        self.patience = patience
+        self.bad_epochs = 0
+        self.best_loss = float('inf')
+        self.abandon_student = False
+
+    def get_alpha(self, current_epoch):
+        return self.base_scheduler.get_alpha(current_epoch)
+
+    def update(self, current_epoch, val_loss, student_preds, teacher_preds, true_labels):
+        self.base_scheduler.update(current_epoch, val_loss, student_preds, teacher_preds, true_labels)
+        if val_loss < self.best_loss - self.threshold:
+            self.best_loss = val_loss
+            self.bad_epochs = 0
+        else:
+            self.bad_epochs += 1
+            if self.bad_epochs >= self.patience:
+                self.abandon_student = True
+
+
+
 def get_alpha_scheduler(cfg):
     """根据配置获取 alpha 调度器实例"""
     schedule_type = cfg.ALPHA_SCHEDULE.lower()
     if schedule_type == 'linear':
-        return LinearScheduler(cfg.ALPHA_START, cfg.ALPHA_END, cfg.EPOCHS)
+        base = LinearScheduler(cfg.ALPHA_START, cfg.ALPHA_END, cfg.EPOCHS)
     elif schedule_type == 'exponential':
         # 指数增长通常要求 alpha > 0，如果 alpha_start=0，可能需要调整
         start_alpha = cfg.ALPHA_START if cfg.ALPHA_START > 0 else 1e-6 # 避免 log(0) 或除以 0
@@ -97,9 +124,13 @@ def get_alpha_scheduler(cfg):
              print("Warning: ExponentialScheduler end alpha <= 0, defaulting to linear.")
              return LinearScheduler(cfg.ALPHA_START, cfg.ALPHA_END, cfg.EPOCHS)
 
-        return ExponentialScheduler(start_alpha, end_alpha, cfg.EPOCHS)
+        base = ExponentialScheduler(start_alpha, end_alpha, cfg.EPOCHS)
     elif schedule_type == 'constant':
-        return ConstantScheduler(cfg.CONSTANT_ALPHA, cfg.EPOCHS)
+        base = ConstantScheduler(cfg.CONSTANT_ALPHA, cfg.EPOCHS)
     else:
         raise ValueError(f"Unsupported alpha schedule type: {schedule_type}")
+
+    if getattr(cfg, 'USE_ALPHA_GATING', False):
+        return GatedAlphaScheduler(base, threshold=cfg.GATING_THRESHOLD, patience=cfg.GATING_PATIENCE)
+    return base
 

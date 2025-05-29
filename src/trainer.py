@@ -125,6 +125,10 @@ class BaseTrainer:
                 logging.info("Early stopping triggered.")
                 break
 
+            if hasattr(self, 'alpha_scheduler') and getattr(self.alpha_scheduler, 'abandon_student', False):
+                logging.info("Alpha gating triggered. Abandoning student model.")
+                break
+
         total_time = time.time() - start_time
         logging.info(f"--- Training Finished for {self.model_name} ---")
         logging.info(f"Total Training Time: {total_time:.2f}s")

@@ -64,6 +64,10 @@ class Config:
         self.ALPHA_END = 0.7
         self.ALPHA_SCHEDULE = 'linear'
         self.CONSTANT_ALPHA = 0.5
+        # 门控策略
+        self.USE_ALPHA_GATING = False
+        self.GATING_THRESHOLD = 0.01
+        self.GATING_PATIENCE = 2
 
         # --- 评估配置 ---
         self.METRICS = ['mae', 'mse']
